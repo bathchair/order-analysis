@@ -27,12 +27,12 @@ def combined_to_order(filePath):
         # copying left look
         for i in range(2, combinedRows + 1):
             c = wsCombined.cell(row = i, column = 5)
-            wsOrder.cell(row = i + 3, column = 3).value = c.value
+            wsOrder.cell(row = i + 3, column = 4).value = c.value
 
         # copying right look
         for i in range(2, combinedRows + 1):
             c = wsCombined.cell(row = i, column = 7)
-            wsOrder.cell(row = i + 3, column = 4).value = c.value
+            wsOrder.cell(row = i + 3, column = 3).value = c.value
         
         # copying center look
         for i in range(2, combinedRows +1):
