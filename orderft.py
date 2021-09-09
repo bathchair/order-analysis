@@ -3,6 +3,7 @@ import sys
 import openpyxl
 from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles import colors
+from openpyxl.workbook.workbook import Workbook
 
 def get_application_path():
     filePath = ' '
@@ -10,6 +11,32 @@ def get_application_path():
     last_dir = filePath.rfind("/") #find the last directory of executable
     filePath = filePath[:last_dir] #index to this last directory
     return filePath
+
+
+def prop_calculations(wbOrder: Workbook):
+    redFill = PatternFill(start_color = 'FF0000',
+                            end_color = 'FF0000',
+                            fill_type = 'solid')
+    wsOrder = wbOrder.worksheets[0]
+    rCount = 0
+    for row in wsOrder.iter_rows():
+        rCount = rCount + 1
+        if rCount < 5:
+            continue
+        else:
+            center = wsOrder.cell(row = rCount, column = 2).value
+            left = wsOrder.cell(row = rCount, column = 3).value
+            right = wsOrder.cell(row = rCount, column = 4).value
+
+            if center != 0 and center > 15:
+                wsOrder.cell(row = rCount, column = 7).value = center
+            elif left > 15 or right > 15:
+                sum = left + right
+                wsOrder.cell(row = rCount, column = 5).value = left/sum       
+                wsOrder.cell(row = rCount, column = 6).value = right/sum 
+            else:
+                wsOrder.cell(row = rCount, column = 1).fill = redFill
+                wsOrder.cell(row = rCount, column = 8).fill = redFill
 
 
 def combined_to_order(filePath):
@@ -63,6 +90,10 @@ def combined_to_order(filePath):
             wsOrder.cell(row = i + 3, column = 2).value = c.value
 
         wbOrder.create_sheet("Values Only")
+        wbOrder.save(str(filePath + "/Order/" + ID + "_" + orderFile))
+
+        prop_calculations(wbOrder)
+
         wbOrder.save(str(filePath + "/Order/" + ID + "_" + orderFile))
 
 
