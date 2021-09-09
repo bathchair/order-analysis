@@ -28,30 +28,24 @@ def combined_to_order(filePath):
                 temp = []
         pcps.append(temp)
 
-    # fileCombined = os.listdir(filePath + "/Combined/") #get all files in Input folder
-    # fileOrder = os.listdir(filePath + "/Order/")
-
     for pcp in pcps:
         ID = pcp[0]
         wbCombined = openpyxl.load_workbook(filePath + "/Combined/" + ID + "_FaceTalk_Combined.xlsx")
-        if len(pcp) == 2:
+        wsCombined = wbCombined.worksheets[2]
+        if len(pcp) == 3:
             ordnum = pcp[1]
         else:
             ordnum = pcp[4] 
+        lang = pcp[len(pcp) - 1]
 
-    # PAUSE HERE: find a way to find order file with number ONLY (may need to add identifier for language)
-    # have not redirected file returns/outputs yet
-
-    for file in fileCombined:   
-        wbCombined = openpyxl.load_workbook(filePath + "/Combined/" + file) #load excel file
-        wsCombined = wbCombined.worksheets[2]
-    for file in fileOrder: 
-        if(file == ".DS_Store"):
-            continue
-        wbOrder = openpyxl.load_workbook(filePath + "/Order Template/" + file)
+        orderFile = "Order " + ordnum + "_FaceTalk_" + lang + ".xlsx"
+        wbOrder = openpyxl.load_workbook(filePath + "/Order Template/" + orderFile)
         wsOrder = wbOrder.active
 
         combinedRows = wsCombined.max_row
+
+        # insert participant ID into file
+        wsOrder.cell(row = 1, column= 2).value = ID
 
         # copying left look
         for i in range(2, combinedRows + 1):
@@ -69,14 +63,10 @@ def combined_to_order(filePath):
             wsOrder.cell(row = i + 3, column = 2).value = c.value
 
         wbOrder.create_sheet("Values Only")
-        wbOrder.save(str(filePath + "/Order/" + file))
+        wbOrder.save(str(filePath + "/Order/" + ID + "_" + orderFile))
 
-def extract_order_data(filePath):
-    fileOrder = os.listdir(filePath + "/Order/")
 
-    wbData = openpyxl.Workbook()
-    wsData = wbData.active
-
+def create_data_file(wsData):
     secHeaders = ['Demo Info', 'Familiarization', 'PreNaming', 'Naming (Center Looks)', 'PostNaming', 'Post - Pre naming increase in looking', 'Noise vs NoNoise', 'AV vs AO']
     wsData.cell(row = 1, column = 1).value = secHeaders[0]
     wsData.cell(row = 1, column = 7).value = secHeaders[1]
@@ -99,13 +89,52 @@ def extract_order_data(filePath):
     for i in range(1, len(dataHeaders) + 1):
         wsData.cell(row = 2, column = i).value = dataHeaders[i - 1]
 
+
+def extract_order_data(filePath):
+    with open(filePath + '/IO/Participants.txt') as p:
+        rawLines = p.readlines()
+        pcps = [] # To store column names
+
+        i = 1
+        temp = []
+        for line in rawLines:
+            line = line.strip() # remove leading/trailing white spaces
+            if line != '':
+                temp.append(line)
+            else:
+                pcps.append(temp)
+                temp = []
+        pcps.append(temp)
+
+    fileOrder = os.listdir(filePath + "/Order/")
+
+    wbData = openpyxl.Workbook()
+    wsData = wbData.active
+
+    create_data_file(wsData)
+
     dataSpots1 = [32, 16, 40, 24]
     dataSpots2 = [55, 62, 53, 60]
 
-    for file in fileOrder:
-        if(file == ".DS_Store"):
-            continue
-        wbOrder = openpyxl.load_workbook(filePath + "/Order/" + file)
+    rowCount = 3
+
+    for pcp in pcps:
+        ID = pcp[0]
+        if len(pcp) == 3:
+            gender = None
+            ordnum = pcp[1]
+        else:
+            gender = pcp[1]
+            age = pcp[2]
+            monobili = pcp[3]
+            ordnum = pcp[4] 
+            medium = pcp[5]
+
+        lang = pcp[len(pcp) - 1]
+
+        orderFile = "Order " + ordnum + "_FaceTalk_" + lang + ".xlsx"
+
+        wbOrder = openpyxl.load_workbook(filePath + "/Order/" + ID + "_" + orderFile)
         wsOrder = wbOrder.worksheets[1]
 
         data = []
@@ -132,8 +161,16 @@ def extract_order_data(filePath):
 
         colInd = 7
         for d in data:
-            wsData.cell(row = 3,  column = colInd).value = d
+            wsData.cell(row = rowCount, column = 1).value = ID
+            if gender:
+                wsData.cell(row = rowCount, column = 2).value = gender
+                wsData.cell(row = rowCount, column = 3).value = age
+                wsData.cell(row = rowCount, column = 4).value = monobili
+                wsData.cell(row = rowCount, column = 6).value = medium
+            wsData.cell(row = rowCount, column = 5).value = ordnum
+            wsData.cell(row = rowCount,  column = colInd).value = d
             colInd = colInd + 1
+        rowCount = rowCount + 1
 
     wbData.save(str(filePath + "/files/" + "results.xlsx"))
 
